@@ -57,6 +57,7 @@ Please note that using this method may result in a noticeable delay before the a
 1. Fill in your configuration values in `utils_config.py`:
    - Set your `OPEN_ROUTER_API_KEY` (get one from [OpenRouter](https://openrouter.ai/)). Save the key in `.env_example` or change the file path/name to your `.env` file in `utils_config.py`.
    - Choose your preferred models and embedding settings.
+   - Configure your available hardware in `EMBEDDING_PLATFORM`. You need to choose between `mps` for Apple Silicon, `cuda` for Nvidia GPUs or `cpu` for CPU-only systems. If you get `RuntimeError: PyTorch is not linked with support for mps/cuda devices` change to `cpu`.
 
 2. Start the app:
 
