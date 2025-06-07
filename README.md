@@ -48,6 +48,10 @@ source .venv/bin/activate
 uv sync
 ```
 
+Creating and activating a virtual environment is optional when using uv. You can also start the app directly with the following command: `uv run shiny run research_app.py`
+
+Please note that using this method may result in a noticeable delay before the app starts.
+
 ## Running the App
 
 1. Fill in your configuration values in `utils_config.py`:
@@ -62,12 +66,11 @@ shiny run research_app.py
 
 The app will be available at `http://127.0.0.1:8000/`.
 
-> [!TIP] 
+> [!TIP]
 > To disable logging of user interactions, comment out the `log_interaction` function call in `research_app.py`.
 
-> [!NOTE] 
-> Please note that we call OpenRouter with the [OpenAI SDK](https://openrouter.ai/docs/quickstart#using-the-openai-sdk) (which is a preferred way to do it). 
-
+> [!NOTE]
+> Please note that we call OpenRouter with the [OpenAI SDK](https://openrouter.ai/docs/quickstart#using-the-openai-sdk) (which is a preferred way to do it).
 
 ### Using Your Own Data
 
@@ -96,9 +99,10 @@ Many cantonal customers have large, mixed-source document collections and need s
 
 We welcome feedback and contributions! [Email us](mailto:datashop@statistik.zh.ch) or open an issue or pull request.
 
-We use [`ruff`](https://docs.astral.sh/ruff/) for linting and formatting. 
+We use [`ruff`](https://docs.astral.sh/ruff/) for linting and formatting.
 
 Install pre-commit hooks for automatic checks before opening a pull request:
+
 ```bash
 pre-commit install
 ```
