@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv(".env_example")
+load_dotenv(".env")
 
 
 DATA_DIR = "_data/"
@@ -16,49 +16,38 @@ EMBEDDING_MAX_LENGTH = 1200
 
 OPEN_ROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
+headroom_ratio = 1.2  # Leave some headroom for prompt and response tokens
+
 MAX_INPUT_TOKENS = {
-    "Claude Sonnet": 180_000,
-    "GPT-4o": 110_000,
-    "GPT-4.1-nano": 440_000,
-    "GPT-4.1-mini": 220_000,
-    "GPT-4.1": 220_000,
-    "o4-mini": 110_000,
-    "Gemma-3 (OS)": 110_000,
-    "Llama 3.3 (OS)": 110_000,
+    "Claude Sonnet 4.5": int(200_000 / headroom_ratio),
+    "GPT-5.1": int(128_000 / headroom_ratio),
+    "Google Gemini 2.5 Flash": int(400_000 / headroom_ratio),
+    "Google Gemini 2.5 Pro": int(400_000 / headroom_ratio),
 }
 
 MODEL_CHOICES = {
-    "Claude Sonnet": "anthropic/claude-3.5-sonnet",
-    "GPT-4o": "openai/gpt-4o-2024-11-20",
-    "GPT-4.1-nano": "openai/gpt-4.1-nano",
-    "GPT-4.1-mini": "openai/gpt-4.1-mini",
-    "GPT-4.1": "openai/gpt-4.1",
-    "o4-mini": "openai/o4-mini",
-    "Gemma-3 (OS)": "google/gemma-3-27b-it",
-    "Llama 3.3 (OS)": "meta-llama/llama-3.3-70b-instruct",
+    "Google Gemini 2.5 Flash": "google/gemini-2.5-flash-preview-09-2025",
+    "Google Gemini 2.5 Pro": "google/gemini-2.5-pro",
+    "Claude Sonnet 4.5": "anthropic/claude-4.5-sonnet",
+    "GPT-5.1": "openai/gpt-5.1",
 }
 
 MODEL_CHOICES_REVERSE = {v: k for k, v in MODEL_CHOICES.items()}
 
-DEFAULT_MODEL = "GPT-4.1-mini"
+DEFAULT_MODEL = "Google Gemini 2.5 Flash"
 
 DEFAULT_TEMPERATURE = 0.2
 
 MODEL_TEMPERATURES = {
-    "Claude Sonnet": DEFAULT_TEMPERATURE,
-    "GPT-4o": DEFAULT_TEMPERATURE,
-    "GPT-4.1-nano": DEFAULT_TEMPERATURE,
-    "GPT-4.1-mini": DEFAULT_TEMPERATURE,
-    "GPT-4.1": DEFAULT_TEMPERATURE,
-    "o4-mini": DEFAULT_TEMPERATURE,
-    "Gemma-3 (OS)": 1.0,
-    "Llama 3.3 (OS)": DEFAULT_TEMPERATURE,
+    "Claude Sonnet 4.5": DEFAULT_TEMPERATURE,
+    "GPT-5.1": DEFAULT_TEMPERATURE,
+    "Google Gemini 2.5 Flash": DEFAULT_TEMPERATURE,
+    "Google Gemini 2.5 Pro": DEFAULT_TEMPERATURE,
 }
-
 
 HYBRID_BALANCE = 0.7
 
-INFO_TEXT = """Dies ist ein Test für eine App, mit der du **Dokumente nach Stichworten (*lexikalisch*) und nach Bedeutung (*semantisch*) durchsuchen und mit einem Sprachmodell (LLM) befragen** kannst.\n\nDie App dient zum Testen. **Beachte, dass sowohl die Suche als auch die Antworten fehlerhaft oder unvollständig sein können.** Überprüfe die Ergebnisse immer.\n\nDeine Fragen werden an Clouddienste weitergeleitet und dort verarbeitet. **Gib daher nur als öffentlich klassifizierte Informationen als Fragen bzw. Promptinhalte ein.**.\n\nApp-Version v0.1. Letzte Aktualisierung 23.5.2025"""
+INFO_TEXT = """Dies ist ein Test für eine App, mit der du **Dokumente nach Stichworten (*lexikalisch*) und nach Bedeutung (*semantisch*) durchsuchen und mit einem Sprachmodell (LLM) befragen** kannst.\n\nDie App dient zum Testen. **Beachte, dass sowohl die Suche als auch die Antworten fehlerhaft oder unvollständig sein können.** Überprüfe die Ergebnisse immer.\n\nDeine Fragen werden an Clouddienste weitergeleitet und dort verarbeitet. **Gib daher nur als öffentlich klassifizierte Informationen als Fragen bzw. Promptinhalte ein.**.\n\nApp-Version v0.2. Letzte Aktualisierung 9.12.2025"""
 
 INSTRUCTIONS = """#### Tipps zur Bedienung
 

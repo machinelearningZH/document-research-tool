@@ -7,7 +7,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/machinelearningZH/document-research-tool.svg)](https://github.com/machinelearningZH/document-research-tool/stargazers)
 [![GitHub Issues](https://img.shields.io/github/issues/machinelearningZH/document-research-tool.svg)](https://github.com/machinelearningZH/document-research-tool/issues)
 [![GitHub Issues](https://img.shields.io/github/issues-pr/machinelearningZH/document-research-tool.svg)](https://img.shields.io/github/issues-pr/machinelearningZH/document-research-tool)
-[![Current Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/machinelearningZH/document-research-tool)
+[![Current Version](https://img.shields.io/badge/version-0.2.0-green.svg)](https://github.com/machinelearningZH/document-research-tool)
 <a href="https://github.com/astral-sh/ruff"><img alt="linting - Ruff" class="off-glb" loading="lazy" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json"></a>
 
 <details>
@@ -55,6 +55,7 @@ Please note that using this method may result in a noticeable delay before the a
 ## Running the App
 
 1. Fill in your configuration values in `utils_config.py`:
+
    - Set your `OPEN_ROUTER_API_KEY` (get one from [OpenRouter](https://openrouter.ai/)). Save the key in `.env_example` or change the file path/name to your `.env` file in `utils_config.py`.
    - Choose your preferred models and embedding settings.
    - Configure your available hardware in `EMBEDDING_PLATFORM`. You need to choose between `mps` for Apple Silicon, `cuda` for Nvidia GPUs or `cpu` for CPU-only systems. If you get `RuntimeError: PyTorch is not linked with support for mps/cuda devices` change to `cpu`.
@@ -102,16 +103,10 @@ We welcome feedback and contributions! [Email us](mailto:datashop@statistik.zh.c
 
 We use [`ruff`](https://docs.astral.sh/ruff/) for linting and formatting.
 
-Install pre-commit hooks for automatic checks before opening a pull request:
-
-```bash
-pre-commit install
-```
-
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Disclaimer
 
-This software (the Software) incorporates the open-source model `de_core_news` (the Model) from spacy.io and has been developed according to and with the intent to be used under Swiss law. Please be aware that the EU Artificial Intelligence Act (EU AI Act) may, under certain circumstances, be applicable to your use of the Software. You are solely responsible for ensuring that your use of the Software as well as of the underlying Model complies with all applicable local, national and international laws and regulations. By using this Software, you acknowledge and agree (a) that it is your responsibility to assess which laws and regulations, in particular regarding the use of AI technologies, are applicable to your intended use and to comply therewith, and (b) that you will hold us harmless from any action, claims, liability or loss in respect of your use of the Software.
+This software (the Software) incorporates models (Models) from spacy.io and others and has been developed according to and with the intent to be used under Swiss law. Please be aware that the EU Artificial Intelligence Act (EU AI Act) may, under certain circumstances, be applicable to your use of the Software. You are solely responsible for ensuring that your use of the Software as well as of the underlying Models complies with all applicable local, national and international laws and regulations. By using this Software, you acknowledge and agree (a) that it is your responsibility to assess which laws and regulations, in particular regarding the use of AI technologies, are applicable to your intended use and to comply therewith, and (b) that you will hold us harmless from any action, claims, liability or loss in respect of your use of the Software.

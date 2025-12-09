@@ -166,12 +166,12 @@ def retrieve_ranked_chunks(
 
 async def call_openai(
     prompt,
-    model_id="openai/gpt-4.1-mini",
+    model_id="google/gemini-2.5-flash-preview-09-2025",
     temperature=DEFAULT_TEMPERATURE,
     max_tokens=8192,
 ):
     """
-    Call the OpenAI API with appropriate parameters based on the model.
+    Call the OpenRouter API with appropriate parameters based on the model.
 
     Args:
         prompt (str): The prompt to send to the API
@@ -349,30 +349,34 @@ app_ui = ui.page_sidebar(
     ui.layout_columns(
         # Left column for Search.
         ui.card(
-            ui.input_text_area(
-                "search_query",
-                "Gib hier Suchbegriffe ein:",
-                value="Was waren wichtige Entscheide zu kantonalen Steuern?",
-                width="100%",
-                rows=2,
-            ),
-            ui.layout_columns(
-                ui.input_action_button(
-                    "search_btn", "Suchen", width="100%", class_="btn-sm btn-warning"
-                ),
-                ui.input_action_button(
-                    "copy_btn",
-                    "Suchbegriffe zu Prompt kopieren >>",
+            ui.div(
+                ui.input_text_area(
+                    "search_query",
+                    "Gib hier Suchbegriffe ein:",
+                    value="Was waren wichtige Entscheide zu kantonalen Steuern?",
                     width="100%",
-                    class_="btn-sm btn-outline-secondary",
+                    rows=2,
                 ),
-                col_widths=[4, -4, 4],
+                ui.layout_columns(
+                    ui.input_action_button(
+                        "search_btn", "Suchen", width="100%", class_="btn-sm btn-warning"
+                    ),
+                    ui.input_action_button(
+                        "copy_btn",
+                        "Suchbegriffe zu Prompt kopieren >>",
+                        width="100%",
+                        class_="btn-sm btn-outline-secondary",
+                    ),
+                    col_widths=[4, -4, 4],
+                ),
+                ui.output_ui("show_warning"),
+                ui.output_ui("show_lexical_count"),
+                ui.output_data_frame("get_search_results"),
+                ui.output_ui("show_details_for_selected_rows"),
+                style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start;",
             ),
-            ui.output_ui("show_warning"),
-            ui.output_ui("show_lexical_count"),
-            ui.output_data_frame("get_search_results"),
-            ui.output_ui("show_details_for_selected_rows"),
             style="background:#fff8f5 !important;",
+            height="auto",
         ),
         # Right column for Chat.
         ui.card(
@@ -387,7 +391,10 @@ app_ui = ui.page_sidebar(
             ui.output_ui("btn_click_warning"),
             ui.output_ui("result"),
             style="background:#fafffb !important;",
+            height="auto",
         ),
+        col_widths=[6, 6],
+        row_heights=None,
     ),
 )
 
@@ -444,6 +451,7 @@ def server(input, output, session):
     def show_warning():
         if not input.search_query():
             return ui.div("Bitte gib eine Suchanfrage ein.", class_="alert alert-warning")
+        return ""
 
     @reactive.effect
     @reactive.event(input.copy_btn)
@@ -488,6 +496,7 @@ def server(input, output, session):
                 f"Keine Entscheide über die lexikalische Suche mit dem exakten Stichwort gefunden.",
                 class_="alert alert-warning",
             )
+        return ""
 
     # Render UI is executed when any of the reactive values change.
     @render.ui
@@ -513,6 +522,7 @@ def server(input, output, session):
                 return ui.HTML(
                     f"<p><small>Total {len(search_results.get())} gefunden. Wähle eins oder mehrere Dokumente aus.</small></p>"
                 )
+        return ""
 
     # ---------------------------------------------------------------
     # Chat
@@ -525,30 +535,37 @@ def server(input, output, session):
     @reactive.effect
     @reactive.event(input.chat_btn)
     def btn_click():
-        if selected_search_results.get() is not None and input.chat_query() != "":
+        # Only call LLM if both search results are selected AND query is not empty
+        if selected_search_results.get() is not None and input.chat_query().strip() != "":
             call_llm(
                 input.chat_query(),
                 selected_search_results.get(),
                 input.model_choice(),
             )
+        # If validation fails, the warning will be shown by btn_click_warning()
 
     @render.ui
     @reactive.event(input.chat_btn)
     def btn_click_warning():
         if selected_search_results.get() is None:
             return ui.div(
-                "Bitte wähle zuerst einen oder mehrere Entscheide aus.",
+                "⚠️ Bitte wähle zuerst einen oder mehrere Entscheide aus den Suchresultaten aus.",
                 class_="alert alert-warning",
             )
-        if input.chat_query() == "":
+        if input.chat_query().strip() == "":
             return ui.div(
-                "Bitte gib eine Frage oder einen Prompt ein.",
+                "⚠️ Bitte gib eine Frage oder einen Prompt ein.",
                 class_="alert alert-warning",
             )
+        # Return empty string when validation passes to avoid empty space
+        return ""
 
     @render.ui
     def result():
-        return ui.HTML(call_llm.result())
+        result_value = call_llm.result()
+        if result_value is None:
+            return ""
+        return ui.HTML(result_value)
 
 
 # ---------------------------------------------------------------
