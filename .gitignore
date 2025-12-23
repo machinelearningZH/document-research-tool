@@ -171,6 +171,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Additional files to ignore
 .DS_Store
-*.code-workspace
 .env
