@@ -83,7 +83,6 @@ def get_embedding_model():
     """Load the embedding model."""
     model = SentenceTransformer(
         EMBEDDING_MODEL,
-        trust_remote_code=True,
         device=EMBEDDING_PLATFORM,  # Use "cuda" for CUDA GPU, "mps" for Mac, "cpu" for CPU.
     )
     model.max_seq_length = EMBEDDING_MAX_LENGTH
@@ -93,11 +92,11 @@ def get_embedding_model():
 embedding_model = get_embedding_model()
 
 
-def embed_documents(text):
-    """Embed text using the embedding model."""
+def embed_query(text: str):
+    """Embed a search query using the embedding model."""
     try:
         return embedding_model.encode(
-            text,
+            f"query: {text}",
             batch_size=1,
             convert_to_tensor=False,
             normalize_embeddings=True,
@@ -118,7 +117,10 @@ def num_tokens_from_string(string: str) -> int:
 
 
 try:
-    client = weaviate.connect_to_embedded(persistence_data_path=WEAVIATE_INDEX_DIR)
+    client = weaviate.connect_to_embedded(
+        persistence_data_path=WEAVIATE_INDEX_DIR,
+        environment_variables={"DEBUG": "false", "LOG_LEVEL": "error"},
+    )
     logging.info("Connected to Weaviate embedded...")
 except Exception as e:
     logging.error(f"Error: {e}")
@@ -140,7 +142,7 @@ def retrieve_ranked_chunks(
         return [], [], 0
 
     try:
-        embedding = embed_documents(query)
+        embedding = embed_query(query)
         if embedding is None:
             logging.error("Failed to generate embedding for query")
             return [], [], 0

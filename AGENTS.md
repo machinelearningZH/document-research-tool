@@ -112,3 +112,4 @@ uv run ruff format . && uv run ruff check . && uv run pytest  # All checks
 ## Discovery Log
 
 - (Agent: Add project-specific notes/stack decisions here)
+- Embedded Weaviate may inherit `DEBUG=release` from the notebook/app environment and emit very verbose Go router traces. Use `environment_variables={"DEBUG": "false", "LOG_LEVEL": "error"}` in `weaviate.connect_to_embedded(...)` to suppress them.
