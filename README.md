@@ -46,9 +46,6 @@ pip3 install uv
 uv venv
 source .venv/bin/activate
 uv sync
-
-# Or start directly:
-uv run shiny run research_app.py
 ```
 
 ## Running the App
