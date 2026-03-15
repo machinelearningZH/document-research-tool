@@ -43,8 +43,6 @@ git clone https://github.com/machinelearningZH/document-research-tool.git
 cd document-research-tool
 
 pip3 install uv
-uv venv
-source .venv/bin/activate
 uv sync
 ```
 
@@ -58,7 +56,7 @@ uv sync
 2. Start the app:
 
 ```bash
-shiny run research_app.py
+uv run shiny run research_app.py
 ```
 
 The app will be available at `http://127.0.0.1:8000/`.
