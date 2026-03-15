@@ -46,16 +46,14 @@ pip3 install uv
 uv venv
 source .venv/bin/activate
 uv sync
+
+# Or start directly:
+uv run shiny run research_app.py
 ```
-
-Creating and activating a virtual environment is optional when using uv. You can also start the app directly with the following command: `uv run shiny run research_app.py`
-
-Please note that using this method may result in a noticeable delay before the app starts.
 
 ## Running the App
 
 1. Fill in your configuration values:
-
    - Copy `.env_example` to `.env` and set your `OPEN_ROUTER_API_KEY` (get one from [OpenRouter](https://openrouter.ai/)).
    - Edit `config.yaml` to choose your preferred models, embedding settings, and search parameters.
    - Set `embedding.platform` in `config.yaml` to `mps` for Apple Silicon, `cuda` for Nvidia GPUs, or `cpu` for CPU-only systems. If you get `RuntimeError: PyTorch is not linked with support for mps/cuda devices` change to `cpu`.
@@ -71,12 +69,9 @@ The app will be available at `http://127.0.0.1:8000/`.
 > [!TIP]
 > To disable logging of user interactions, comment out the `log_interaction` function call in `research_app.py`.
 
-> [!NOTE]
-> Please note that we call OpenRouter with the [OpenAI SDK](https://openrouter.ai/docs/quickstart#using-the-openai-sdk) (which is a preferred way to do it).
-
 ### Using Your Own Data
 
-- The app works out of the box with provided sample data (several hundred "Kantonsratsprotokolle" available as Open Government Data).
+- The app works out of the box with provided sample data (several hundred «Kantonsratsprotokolle» available as Open Government Data).
 - To use your own documents, run `01_index_data.ipynb` to preprocess your data and create a [Weaviate](https://weaviate.io/developers/weaviate/installation/embedded) search index.
 - By default, Weaviate index data is stored in `.local/share/weaviate/`.
 - For remote deployment, copy the index data to the same path or adjust `paths.weaviate_index_dir` in `config.yaml`.
