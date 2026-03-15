@@ -166,8 +166,7 @@ def retrieve_ranked_chunks(
 
 async def call_openai(
     prompt,
-    model_id="google/gemini-2.5-flash-preview-09-2025",
-    temperature=DEFAULT_TEMPERATURE,
+    model_id="google/gemini-3-flash-preview",
     max_tokens=8192,
 ):
     """
@@ -176,7 +175,6 @@ async def call_openai(
     Args:
         prompt (str): The prompt to send to the API
         model_id (str): Model identifier
-        temperature (float): Temperature for generation
         max_tokens (int): Maximum tokens to generate
 
     Returns:
@@ -197,7 +195,6 @@ async def call_openai(
         if model_id != "openai/o4-mini":
             params.update(
                 {
-                    "temperature": temperature,
                     "max_tokens": max_tokens,
                 }
             )
@@ -233,14 +230,10 @@ async def get_answer(query, context, model_choice):
             logging.error(f"Unknown model choice: {model_choice}")
             return None
 
-        # Get temperature for this model.
-        temperature = MODEL_TEMPERATURES.get(model_key, DEFAULT_TEMPERATURE)
-
         prompt = BASE_PROMPT.format(context=context, question=query)
         return await call_openai(
             prompt,
             model_id=model_choice,
-            temperature=temperature,
         )
     except Exception as e:
         logging.error(f"Error in get_answer: {str(e)}")

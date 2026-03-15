@@ -10,44 +10,35 @@ DOCUMENT_PARQUET_FILE = "02_KRP_selec.parq"
 WEAVIATE_INDEX_DIR = "_weaviate_index/"
 WEAVIATE_COLLECTION_NAME = "research_app"
 
-EMBEDDING_MODEL = "jinaai/jina-embeddings-v2-base-de"
+EMBEDDING_MODEL = "intfloat/multilingual-e5-small"
 EMBEDDING_PLATFORM = "mps"  # "cuda" for CUDA GPU, "mps" for Mac, "cpu" for CPU
-EMBEDDING_MAX_LENGTH = 1200
+EMBEDDING_MAX_LENGTH = 500
 
 OPEN_ROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 headroom_ratio = 1.2  # Leave some headroom for prompt and response tokens
 
 MAX_INPUT_TOKENS = {
-    "Claude Sonnet 4.5": int(200_000 / headroom_ratio),
-    "GPT-5.1": int(128_000 / headroom_ratio),
-    "Google Gemini 2.5 Flash": int(400_000 / headroom_ratio),
-    "Google Gemini 2.5 Pro": int(400_000 / headroom_ratio),
+    "Claude Sonnet 4.6": int(200_000 / headroom_ratio),
+    "GPT-5.4": int(128_000 / headroom_ratio),
+    "Google Gemini 3.1 Flash": int(400_000 / headroom_ratio),
+    "Google Gemini 3.1 Pro": int(400_000 / headroom_ratio),
 }
 
 MODEL_CHOICES = {
-    "Google Gemini 2.5 Flash": "google/gemini-2.5-flash-preview-09-2025",
-    "Google Gemini 2.5 Pro": "google/gemini-2.5-pro",
-    "Claude Sonnet 4.5": "anthropic/claude-4.5-sonnet",
-    "GPT-5.1": "openai/gpt-5.1",
+    "Google Gemini 3.1 Flash": "google/gemini-3-flash-preview",
+    "Google Gemini 3.1 Pro": "google/gemini-3.1-pro-preview",
+    "Claude Sonnet 4.6": "anthropic/claude-4.6-sonnet",
+    "GPT-5.4": "openai/gpt-5.4",
 }
 
 MODEL_CHOICES_REVERSE = {v: k for k, v in MODEL_CHOICES.items()}
 
-DEFAULT_MODEL = "Google Gemini 2.5 Flash"
-
-DEFAULT_TEMPERATURE = 0.2
-
-MODEL_TEMPERATURES = {
-    "Claude Sonnet 4.5": DEFAULT_TEMPERATURE,
-    "GPT-5.1": DEFAULT_TEMPERATURE,
-    "Google Gemini 2.5 Flash": DEFAULT_TEMPERATURE,
-    "Google Gemini 2.5 Pro": DEFAULT_TEMPERATURE,
-}
+DEFAULT_MODEL = "Google Gemini 3.1 Flash"
 
 HYBRID_BALANCE = 0.7
 
-INFO_TEXT = """Dies ist ein Test für eine App, mit der du **Dokumente nach Stichworten (*lexikalisch*) und nach Bedeutung (*semantisch*) durchsuchen und mit einem Sprachmodell (LLM) befragen** kannst.\n\nDie App dient zum Testen. **Beachte, dass sowohl die Suche als auch die Antworten fehlerhaft oder unvollständig sein können.** Überprüfe die Ergebnisse immer.\n\nDeine Fragen werden an Clouddienste weitergeleitet und dort verarbeitet. **Gib daher nur als öffentlich klassifizierte Informationen als Fragen bzw. Promptinhalte ein.**.\n\nApp-Version v0.2. Letzte Aktualisierung 9.12.2025"""
+INFO_TEXT = """Dies ist ein Test für eine App, mit der du **Dokumente nach Stichworten (*lexikalisch*) und nach Bedeutung (*semantisch*) durchsuchen und mit einem Sprachmodell (LLM) befragen** kannst.\n\nDie App dient zum Testen. **Beachte, dass sowohl die Suche als auch die Antworten fehlerhaft oder unvollständig sein können.** Überprüfe die Ergebnisse immer.\n\nDeine Fragen werden an Clouddienste weitergeleitet und dort verarbeitet. **Gib daher nur als öffentlich klassifizierte Informationen als Fragen bzw. Promptinhalte ein.**.\n\nApp-Version v0.3. Letzte Aktualisierung 15.3.2025"""
 
 INSTRUCTIONS = """#### Tipps zur Bedienung
 

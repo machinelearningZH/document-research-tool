@@ -1,6 +1,6 @@
 [project]
 name = "document-research-tool"
-version = "0.2.0"
+version = "0.3.0"
 description = 'Perform intelligent research over document collections using hybrid search and LLMs.'
 readme = "README.md"
 requires-python = ">=3.12"
