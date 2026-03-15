@@ -7,7 +7,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/machinelearningZH/document-research-tool.svg)](https://github.com/machinelearningZH/document-research-tool/stargazers)
 [![GitHub Issues](https://img.shields.io/github/issues/machinelearningZH/document-research-tool.svg)](https://github.com/machinelearningZH/document-research-tool/issues)
 [![GitHub Issues](https://img.shields.io/github/issues-pr/machinelearningZH/document-research-tool.svg)](https://img.shields.io/github/issues-pr/machinelearningZH/document-research-tool)
-[![Current Version](https://img.shields.io/badge/version-0.2.0-green.svg)](https://github.com/machinelearningZH/document-research-tool)
+[![Current Version](https://img.shields.io/badge/version-0.3.0-green.svg)](https://github.com/machinelearningZH/document-research-tool)
 <a href="https://github.com/astral-sh/ruff"><img alt="linting - Ruff" class="off-glb" loading="lazy" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json"></a>
 
 <details>
@@ -54,11 +54,11 @@ Please note that using this method may result in a noticeable delay before the a
 
 ## Running the App
 
-1. Fill in your configuration values in `utils_config.py`:
+1. Fill in your configuration values:
 
-   - Set your `OPEN_ROUTER_API_KEY` (get one from [OpenRouter](https://openrouter.ai/)). Save the key in `.env_example` or change the file path/name to your `.env` file in `utils_config.py`.
-   - Choose your preferred models and embedding settings.
-   - Configure your available hardware in `EMBEDDING_PLATFORM`. You need to choose between `mps` for Apple Silicon, `cuda` for Nvidia GPUs or `cpu` for CPU-only systems. If you get `RuntimeError: PyTorch is not linked with support for mps/cuda devices` change to `cpu`.
+   - Copy `.env_example` to `.env` and set your `OPEN_ROUTER_API_KEY` (get one from [OpenRouter](https://openrouter.ai/)).
+   - Edit `config.yaml` to choose your preferred models, embedding settings, and search parameters.
+   - Set `embedding.platform` in `config.yaml` to `mps` for Apple Silicon, `cuda` for Nvidia GPUs, or `cpu` for CPU-only systems. If you get `RuntimeError: PyTorch is not linked with support for mps/cuda devices` change to `cpu`.
 
 2. Start the app:
 
@@ -79,7 +79,7 @@ The app will be available at `http://127.0.0.1:8000/`.
 - The app works out of the box with provided sample data (several hundred "Kantonsratsprotokolle" available as Open Government Data).
 - To use your own documents, run `01_index_data.ipynb` to preprocess your data and create a [Weaviate](https://weaviate.io/developers/weaviate/installation/embedded) search index.
 - By default, Weaviate index data is stored in `.local/share/weaviate/`.
-- For remote deployment, copy the index data to the same path or adjust the path in the app: `client = weaviate.connect_to_embedded(persistence_data_path="/your_data_path_on_your_vm/")`
+- For remote deployment, copy the index data to the same path or adjust `paths.weaviate_index_dir` in `config.yaml`.
 
 ## Project Information
 

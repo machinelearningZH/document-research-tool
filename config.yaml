@@ -1,0 +1,67 @@
+paths:
+  data_dir: "_data/"
+  document_parquet_file: "02_KRP_selec.parq"
+  weaviate_index_dir: "_weaviate_index/"
+
+search:
+  weaviate_collection_name: "research_app"
+  hybrid_balance: 0.7
+  bm25_limit: 10
+  hybrid_limit: 300
+
+embedding:
+  model: "intfloat/multilingual-e5-small"
+  platform: "mps"  # "cuda" for CUDA GPU, "mps" for Mac, "cpu" for CPU
+  max_length: 500
+
+llm:
+  default_model: "Google Gemini 3.1 Flash"
+  headroom_ratio: 1.2
+  max_output_tokens: 8192
+  tiktoken_model: "gpt-4o"
+  model_choices:
+    "Google Gemini 3.1 Flash": "google/gemini-3-flash-preview"
+    "Google Gemini 3.1 Pro": "google/gemini-3.1-pro-preview"
+    "Claude Sonnet 4.6": "anthropic/claude-4.6-sonnet"
+    "GPT-5.4": "openai/gpt-5.4"
+  context_lengths:
+    "Claude Sonnet 4.6": 200000
+    "GPT-5.4": 128000
+    "Google Gemini 3.1 Flash": 400000
+    "Google Gemini 3.1 Pro": 400000
+
+ui:
+  colors:
+    sidebar: "#fafcff"
+    search: "#fff8f5"
+    chat: "#fafffb"
+  info_text: |
+    Dies ist ein Test für eine App, mit der du **Dokumente nach Stichworten (*lexikalisch*) und nach Bedeutung (*semantisch*) durchsuchen und mit einem Sprachmodell (LLM) befragen** kannst.
+
+    Die App dient zum Testen. **Beachte, dass sowohl die Suche als auch die Antworten fehlerhaft oder unvollständig sein können.** Überprüfe die Ergebnisse immer.
+
+    Deine Fragen werden an Clouddienste weitergeleitet und dort verarbeitet. **Gib daher nur als öffentlich klassifizierte Informationen als Fragen bzw. Promptinhalte ein.**.
+
+    App-Version v0.3. Letzte Aktualisierung 15.3.2025
+  instructions: |
+    #### Tipps zur Bedienung
+
+    ##### Suche nach Quellen
+    - Gib im linken Feld **Suchbegriffe oder Fragen** ein. Klicke auf **«Suchen»**. Du erhältst deine Suchergebnisse als Liste unter dem Suchfeld.
+    - **Wähle einen oder mehrere Quellen aus**, die du an das Sprachmodell schicken willst.
+    - Du kannst mit der **SHIFT-Taste** mehrere Quellen auswählen.
+    - Du kannst mit der **CTRL-Taste** (auf Windows) und **CMD-Taste** (auf Mac) mehrere Quellen auswählen, die in der Liste nicht aufeinander folgen.
+
+    ##### Die ausgewählten Quellen «befragen»
+    - **Gib im rechten Feld deine Frage oder deinen Prompt ein** und klicke auf **«Fragen»**.
+    - Du kannst auch Anweisungen geben wie: *„Fasse die Quellen einzeln zusammen"*.
+    - Du kannst auch **mehrere Anweisungen in einem Prompt geben**, z. B.:
+      *„Fasse alle Quellen einzeln zusammen. Liste alle wichtigen Entscheidkriterien auf."*
+    - Du kannst **immer wieder neue Fragen oder Anweisungen geben**. Die Antworten beziehen sich weiter auf die ausgewählten Quellen aus dem ersten Schritt.
+
+    ##### Einstellungen
+    - Wähle die **Balance zwischen exakter Suche nach Stichwort (lexikalisch) und Suche nach Bedeutung (semantisch)**.
+    - Die App führt generell beide Suchen aus und fügt die Resultate beider Abfragen in der Trefferliste zusammen.
+    - Wenn du **ausschließlich exakt nach Stichworten suchen willst**, wähle **0**.
+    - Wenn du **nur semantische Treffer haben willst**, wähle **1**.
+    - Beachte, dass eine **semantische Suche immer Ergebnisse liefert**, selbst wenn die Resultate inhaltlich sehr weit von deiner Abfrage entfernt sind.

@@ -1,64 +1,57 @@
+import logging
 import os
+from pathlib import Path
+
+import yaml
 from dotenv import load_dotenv
 
 load_dotenv(".env")
 
+# Load configuration from config.yaml.
+_config_path = Path(__file__).parent / "config.yaml"
+with open(_config_path) as f:
+    _cfg = yaml.safe_load(f)
 
-DATA_DIR = "_data/"
-DOCUMENT_PARQUET_FILE = "02_KRP_selec.parq"
+# Paths
+DATA_DIR = Path(_cfg["paths"]["data_dir"])
+DOCUMENT_PARQUET_FILE = _cfg["paths"]["document_parquet_file"]
+WEAVIATE_INDEX_DIR = _cfg["paths"]["weaviate_index_dir"]
 
-WEAVIATE_INDEX_DIR = "_weaviate_index/"
-WEAVIATE_COLLECTION_NAME = "research_app"
+# Search
+WEAVIATE_COLLECTION_NAME = _cfg["search"]["weaviate_collection_name"]
+HYBRID_BALANCE = _cfg["search"]["hybrid_balance"]
+BM25_LIMIT = _cfg["search"]["bm25_limit"]
+HYBRID_LIMIT = _cfg["search"]["hybrid_limit"]
 
-EMBEDDING_MODEL = "intfloat/multilingual-e5-small"
-EMBEDDING_PLATFORM = "mps"  # "cuda" for CUDA GPU, "mps" for Mac, "cpu" for CPU
-EMBEDDING_MAX_LENGTH = 500
+# Embedding
+EMBEDDING_MODEL = _cfg["embedding"]["model"]
+EMBEDDING_PLATFORM = _cfg["embedding"]["platform"]
+EMBEDDING_MAX_LENGTH = _cfg["embedding"]["max_length"]
 
-OPEN_ROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-
-headroom_ratio = 1.2  # Leave some headroom for prompt and response tokens
-
-MAX_INPUT_TOKENS = {
-    "Claude Sonnet 4.6": int(200_000 / headroom_ratio),
-    "GPT-5.4": int(128_000 / headroom_ratio),
-    "Google Gemini 3.1 Flash": int(400_000 / headroom_ratio),
-    "Google Gemini 3.1 Pro": int(400_000 / headroom_ratio),
-}
-
-MODEL_CHOICES = {
-    "Google Gemini 3.1 Flash": "google/gemini-3-flash-preview",
-    "Google Gemini 3.1 Pro": "google/gemini-3.1-pro-preview",
-    "Claude Sonnet 4.6": "anthropic/claude-4.6-sonnet",
-    "GPT-5.4": "openai/gpt-5.4",
-}
-
+# LLM
+DEFAULT_MODEL = _cfg["llm"]["default_model"]
+HEADROOM_RATIO = _cfg["llm"]["headroom_ratio"]
+MAX_OUTPUT_TOKENS = _cfg["llm"]["max_output_tokens"]
+TIKTOKEN_MODEL = _cfg["llm"]["tiktoken_model"]
+MODEL_CHOICES: dict[str, str] = _cfg["llm"]["model_choices"]
 MODEL_CHOICES_REVERSE = {v: k for k, v in MODEL_CHOICES.items()}
+_context_lengths: dict[str, int] = _cfg["llm"]["context_lengths"]
+MAX_INPUT_TOKENS = {k: int(v / HEADROOM_RATIO) for k, v in _context_lengths.items()}
 
-DEFAULT_MODEL = "Google Gemini 3.1 Flash"
+# Validate that all model choices have token limit entries.
+_missing = set(MODEL_CHOICES.keys()) - set(MAX_INPUT_TOKENS.keys())
+if _missing:
+    raise ValueError(f"Missing context_lengths entries for models: {_missing}")
 
-HYBRID_BALANCE = 0.7
+# Secrets
+OPEN_ROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+if not OPEN_ROUTER_API_KEY:
+    logging.warning(
+        "OPENROUTER_API_KEY not set in environment. LLM features will not work. "
+        "Add it to .env file."
+    )
 
-INFO_TEXT = """Dies ist ein Test für eine App, mit der du **Dokumente nach Stichworten (*lexikalisch*) und nach Bedeutung (*semantisch*) durchsuchen und mit einem Sprachmodell (LLM) befragen** kannst.\n\nDie App dient zum Testen. **Beachte, dass sowohl die Suche als auch die Antworten fehlerhaft oder unvollständig sein können.** Überprüfe die Ergebnisse immer.\n\nDeine Fragen werden an Clouddienste weitergeleitet und dort verarbeitet. **Gib daher nur als öffentlich klassifizierte Informationen als Fragen bzw. Promptinhalte ein.**.\n\nApp-Version v0.3. Letzte Aktualisierung 15.3.2025"""
-
-INSTRUCTIONS = """#### Tipps zur Bedienung
-
-##### Suche nach Quellen
-- Gib im linken Feld **Suchbegriffe oder Fragen** ein. Klicke auf **«Suchen»**. Du erhältst deine Suchergebnisse als Liste unter dem Suchfeld.
-- **Wähle einen oder mehrere Quellen aus**, die du an das Sprachmodell schicken willst.
-- Du kannst mit der **SHIFT-Taste** mehrere Quellen auswählen.
-- Du kannst mit der **CTRL-Taste** (auf Windows) und **CMD-Taste** (auf Mac) mehrere Quellen auswählen, die in der Liste nicht aufeinander folgen.
-
-##### Die ausgewählten Quellen «befragen»
-- **Gib im rechten Feld deine Frage oder deinen Prompt ein** und klicke auf **«Fragen»**.
-- Du kannst auch Anweisungen geben wie: *„Fasse die Quellen einzeln zusammen“*.
-- Du kannst auch **mehrere Anweisungen in einem Prompt geben**, z. B.:
-  *„Fasse alle Quellen einzeln zusammen. Liste alle wichtigen Entscheidkriterien auf.“*
-- Du kannst **immer wieder neue Fragen oder Anweisungen geben**. Die Antworten beziehen sich weiter auf die ausgewählten Quellen aus dem ersten Schritt.
-
-##### Einstellungen
-- Wähle die **Balance zwischen exakter Suche nach Stichwort (lexikalisch) und Suche nach Bedeutung (semantisch)**.
-- Die App führt generell beide Suchen aus und fügt die Resultate beider Abfragen in der Trefferliste zusammen.
-- Wenn du **ausschließlich exakt nach Stichworten suchen willst**, wähle **0**.
-- Wenn du **nur semantische Treffer haben willst**, wähle **1**.
-- Beachte, dass eine **semantische Suche immer Ergebnisse liefert**, selbst wenn die Resultate inhaltlich sehr weit von deiner Abfrage entfernt sind.
-"""
+# UI
+UI_COLORS: dict[str, str] = _cfg["ui"]["colors"]
+INFO_TEXT: str = _cfg["ui"]["info_text"].strip()
+INSTRUCTIONS: str = _cfg["ui"]["instructions"].strip()

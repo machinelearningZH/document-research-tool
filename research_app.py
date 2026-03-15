@@ -1,30 +1,51 @@
-from shiny import App, reactive, render, ui
-from starlette.applications import Starlette
-from starlette.routing import Mount
-from starlette.staticfiles import StaticFiles
-
+import logging
 import os
-import pandas as pd
 import time
 from datetime import datetime
-import logging
-from sentence_transformers import SentenceTransformer
-from openai import AsyncOpenAI
+
+import pandas as pd
+import tiktoken
 import weaviate
 import weaviate.classes as wvc
-import tiktoken
+from openai import AsyncOpenAI
+from sentence_transformers import SentenceTransformer
+from shiny import App, reactive, render, ui
 
+from utils_config import (
+    BM25_LIMIT,
+    DATA_DIR,
+    DEFAULT_MODEL,
+    DOCUMENT_PARQUET_FILE,
+    EMBEDDING_MAX_LENGTH,
+    EMBEDDING_MODEL,
+    EMBEDDING_PLATFORM,
+    HYBRID_BALANCE,
+    HYBRID_LIMIT,
+    INFO_TEXT,
+    INSTRUCTIONS,
+    MAX_INPUT_TOKENS,
+    MAX_OUTPUT_TOKENS,
+    MODEL_CHOICES,
+    MODEL_CHOICES_REVERSE,
+    OPEN_ROUTER_API_KEY,
+    TIKTOKEN_MODEL,
+    UI_COLORS,
+    WEAVIATE_COLLECTION_NAME,
+    WEAVIATE_INDEX_DIR,
+)
 from utils_prompts import BASE_PROMPT
-from utils_config import *
 
-# Suppress Hugginface warning about tokenizers.
+# Suppress Hugging Face warning about tokenizers.
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 logging.basicConfig(
-    filename="app.log",
-    datefmt="%d-%b-%y %H:%M:%S",
     level=logging.INFO,
+    datefmt="%d-%b-%y %H:%M:%S",
+    handlers=[
+        logging.FileHandler("app.log"),
+        logging.StreamHandler(),
+    ],
 )
 
 
@@ -32,25 +53,29 @@ logging.basicConfig(
 # Init
 
 # Load the documents that we will submit to the LLM.
-df = pd.read_parquet(DATA_DIR + DOCUMENT_PARQUET_FILE)
+df = pd.read_parquet(DATA_DIR / DOCUMENT_PARQUET_FILE)
 
-try:
-    openai_async_client = AsyncOpenAI(
-        base_url="https://openrouter.ai/api/v1", api_key=OPEN_ROUTER_API_KEY
-    )
-except Exception as e:
-    logging.error(f"Error initializing OpenAI client for OpenRouter access: {e}")
+openai_async_client = AsyncOpenAI(
+    base_url="https://openrouter.ai/api/v1", api_key=OPEN_ROUTER_API_KEY
+)
 
 
 # ---------------------------------------------------------------
 # Functions
 
 
-def log_interaction(selected_rows_index, query, answer, model_choice, success, start_time):
+def log_interaction(
+    selected_rows_index: list,
+    query: str,
+    answer: str,
+    model_choice: str,
+    success: bool,
+    start_time: float,
+) -> None:
     """Log interaction."""
-    end_time = time.time()
+    elapsed = time.time() - start_time
     logging.info(
-        f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\t{selected_rows_index}\t{query}\t{answer}\t{model_choice}\t{success}\t{end_time - start_time:.3f}"
+        f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\t{selected_rows_index}\t{query}\t{answer}\t{model_choice}\t{success}\t{elapsed:.3f}"
     )
 
 
@@ -84,11 +109,12 @@ def embed_documents(text):
         return None
 
 
+_tiktoken_encoding = tiktoken.encoding_for_model(TIKTOKEN_MODEL)
+
+
 def num_tokens_from_string(string: str) -> int:
     """Returns the number of tokens in a text string."""
-    encoding = tiktoken.encoding_for_model("gpt-4o")
-    num_tokens = len(encoding.encode(string))
-    return num_tokens
+    return len(_tiktoken_encoding.encode(string))
 
 
 try:
@@ -106,19 +132,10 @@ collection = client.collections.get(WEAVIATE_COLLECTION_NAME)
 
 
 def retrieve_ranked_chunks(
-    query,
-    hybrid_balance=HYBRID_BALANCE,
-):
-    """
-    Retrieve relevant chunks from the data.
-
-    Args:
-        query (str): The search query
-        hybrid_balance (reactive.Value): Balance between lexical and semantic search
-
-    Returns:
-        tuple: (result_index, result_chunks, response_bm25)
-    """
+    query: str,
+    hybrid_balance: reactive.Value,
+) -> tuple[list[str], list[str], int]:
+    """Retrieve relevant chunks from the data."""
     if not query or not query.strip():
         return [], [], 0
 
@@ -128,21 +145,24 @@ def retrieve_ranked_chunks(
             logging.error("Failed to generate embedding for query")
             return [], [], 0
 
-        # We only perform BM25 search separately to get the count of lexical results
-        # and inform the user if there are no lexical results.
-        response_bm25 = collection.query.bm25(
-            query=query,
-            limit=10,
-        )
-        response_bm25_count = len(response_bm25.objects) if response_bm25.objects else 0
+        alpha = hybrid_balance.get()
+
+        # Only run separate BM25 search for lexical count when not pure semantic.
+        response_bm25_count = None
+        if alpha < 1.0:
+            response_bm25 = collection.query.bm25(
+                query=query,
+                limit=BM25_LIMIT,
+            )
+            response_bm25_count = len(response_bm25.objects) if response_bm25.objects else 0
 
         # Perform the actual hybrid search.
         response = collection.query.hybrid(
             query=query,
             query_properties=["text"],
             vector=embedding,
-            limit=300,
-            alpha=hybrid_balance.get(),
+            limit=HYBRID_LIMIT,
+            alpha=alpha,
             fusion_type=wvc.query.HybridFusion.RELATIVE_SCORE,
         )
 
@@ -165,39 +185,24 @@ def retrieve_ranked_chunks(
 
 
 async def call_openai(
-    prompt,
-    model_id="google/gemini-3-flash-preview",
-    max_tokens=8192,
-):
-    """
-    Call the OpenRouter API with appropriate parameters based on the model.
-
-    Args:
-        prompt (str): The prompt to send to the API
-        model_id (str): Model identifier
-        max_tokens (int): Maximum tokens to generate
-
-    Returns:
-        str or None: Generated response or None on failure
-    """
+    prompt: str,
+    model_id: str = MODEL_CHOICES[DEFAULT_MODEL],
+    max_tokens: int = MAX_OUTPUT_TOKENS,
+) -> str | None:
+    """Call the OpenRouter API with appropriate parameters based on the model."""
     if not prompt or not prompt.strip():
         logging.warning("Empty prompt provided to call_openai")
         return None
 
     try:
-        # Common parameters.
         params = {
             "model": model_id,
             "messages": [{"role": "user", "content": prompt}],
         }
 
-        # Only add these parameters for models that support them.
+        # Only add max_tokens for models that support it.
         if model_id != "openai/o4-mini":
-            params.update(
-                {
-                    "max_tokens": max_tokens,
-                }
-            )
+            params["max_tokens"] = max_tokens
 
         completion = await openai_async_client.chat.completions.create(**params)
         return completion.choices[0].message.content
@@ -207,81 +212,42 @@ async def call_openai(
         return None
 
 
-async def get_answer(query, context, model_choice):
-    """
-    Format prompt and get answer from API.
-
-    Args:
-        query (str): User query
-        context (str): Context information
-        model_choice (str): Model to use
-
-    Returns:
-        str or None: Model response or None on failure
-    """
-    if not query or not context:
-        logging.warning("Missing query or context in get_answer")
-        return None
-
-    try:
-        # Get the model key from the reverse mapping.
-        model_key = MODEL_CHOICES_REVERSE.get(model_choice)
-        if not model_key:
-            logging.error(f"Unknown model choice: {model_choice}")
-            return None
-
-        prompt = BASE_PROMPT.format(context=context, question=query)
-        return await call_openai(
-            prompt,
-            model_id=model_choice,
-        )
-    except Exception as e:
-        logging.error(f"Error in get_answer: {str(e)}")
-        return None
-
-
-async def chat_with_decisions(query, selected_rows, model_choice):
-    """
-    Process user query with selected document rows.
-
-    Args:
-        query (str): User query
-        selected_rows (DataFrame): Selected document rows
-        model_choice (str): Model identifier
-
-    Returns:
-        str: Formatted response or error message
-    """
+async def chat_with_decisions(
+    query: str, selected_rows: pd.DataFrame, model_choice: str
+) -> str:
+    """Process user query with selected document rows."""
     if not query or selected_rows is None or selected_rows.empty:
-        return ui.markdown("Bitte gib eine Frage ein und wähle mindestens ein Dokument aus.")
+        return "<p>Bitte gib eine Frage ein und wähle mindestens ein Dokument aus.</p>"
 
     try:
-        # Get model key from reverse mapping.
-        model_key = MODEL_CHOICES_REVERSE.get(model_choice)
-        if not model_key:
-            return ui.markdown(f"Unbekanntes Modell: {model_choice}")
+        model_name = MODEL_CHOICES_REVERSE.get(model_choice)
+        if not model_name:
+            return f"<p>Unbekanntes Modell: {model_choice}</p>"
 
         # Create context from selected documents.
         context = "".join(
-            [
-                f"Quelle: {selected_rows.title.get(idx, 'Unbekannt')}\n{x.text}\n\n####################\n\n"
-                for idx, x in selected_rows.iterrows()
-            ]
+            f"Quelle: {row.title}\n{row.text}\n\n####################\n\n"
+            for _, row in selected_rows.iterrows()
         )
 
         # Check token count of composed context.
         num_tokens = num_tokens_from_string(context)
-        # 7.8k plus Base Prompt will be around 8192 tokens, which is the smallest context length for small models.
-        max_tokens = MAX_INPUT_TOKENS.get(model_key, 7_800)
-        # Check if the number of tokens exceeds the limit.
+        max_tokens = MAX_INPUT_TOKENS.get(model_name, 7_800)
         if num_tokens > max_tokens:
-            return ui.markdown(
-                f"Die ausgewählten Dokumente enthalten insgesamt **{num_tokens:,.0f} Tokens** und damit **zu viel Text für die Abfrage**. Bitte wähle weniger Dokumente aus.\n\nDie Limite betragen momentan: {', '.join(f'{v:,.0f} für {k}' for k, v in MAX_INPUT_TOKENS.items())}.\n\nBitte beachte, dass **zuviele Inhalte die Antwortqualität verschlechtern** und nicht verbessern. Es ist essentiell, möglichst wenige, treffende, relevante Inhalte auszuwählen und kein unnötiges «Informationsrauschen» an die Modelle zu schicken."
+            limits = ", ".join(f"{v:,.0f} für {k}" for k, v in MAX_INPUT_TOKENS.items())
+            return (
+                f"<p>Die ausgewählten Dokumente enthalten insgesamt <strong>{num_tokens:,.0f} Tokens</strong> "
+                f"und damit <strong>zu viel Text für die Abfrage</strong>. Bitte wähle weniger Dokumente aus.</p>"
+                f"<p>Die Limite betragen momentan: {limits}.</p>"
+                f"<p>Bitte beachte, dass <strong>zuviele Inhalte die Antwortqualität verschlechtern</strong> "
+                f"und nicht verbessern. Es ist essentiell, möglichst wenige, treffende, relevante Inhalte "
+                f"auszuwählen und kein unnötiges «Informationsrauschen» an die Modelle zu schicken.</p>"
             )
 
         # Get answer from model.
         start_time = time.time()
-        answer = await get_answer(query, context, model_choice)
+        prompt = BASE_PROMPT.format(context=context, question=query)
+        answer = await call_openai(prompt, model_id=model_choice)
 
         if answer is None:
             log_interaction(
@@ -293,20 +259,19 @@ async def chat_with_decisions(query, selected_rows, model_choice):
                 start_time,
             )
             return "Die Abfrage hat leider nicht funktioniert. Versuche es bitte erneut."
-        else:
-            # Clean up and format answer.
-            answer = answer.replace("```html", "").replace("```", "").strip()
 
-            # Log successful interaction.
-            log_interaction(
-                selected_rows.index.tolist(),
-                query,
-                answer,
-                model_choice,
-                True,
-                start_time,
-            )
-            return answer
+        # Clean up and format answer.
+        answer = answer.replace("```html", "").replace("```", "").strip()
+
+        log_interaction(
+            selected_rows.index.tolist(),
+            query,
+            answer,
+            model_choice,
+            True,
+            start_time,
+        )
+        return answer
 
     except Exception as e:
         logging.error(f"Error in chat_with_decisions: {str(e)}")
@@ -337,7 +302,7 @@ app_ui = ui.page_sidebar(
             selected=DEFAULT_MODEL,
         ),
         ui.input_action_button("show_appinfo", "Infos zur App", class_="btn-sm"),
-        style="background:#fafcff !important;",
+        style=f"background:{UI_COLORS['sidebar']} !important;",
     ),
     ui.layout_columns(
         # Left column for Search.
@@ -368,7 +333,7 @@ app_ui = ui.page_sidebar(
                 ui.output_ui("show_details_for_selected_rows"),
                 style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start;",
             ),
-            style="background:#fff8f5 !important;",
+            style=f"background:{UI_COLORS['search']} !important;",
             height="auto",
         ),
         # Right column for Chat.
@@ -383,7 +348,7 @@ app_ui = ui.page_sidebar(
             ui.input_task_button("chat_btn", "Fragen", width="25%", class_="btn-sm btn-success"),
             ui.output_ui("btn_click_warning"),
             ui.output_ui("result"),
-            style="background:#fafffb !important;",
+            style=f"background:{UI_COLORS['chat']} !important;",
             height="auto",
         ),
         col_widths=[6, 6],
@@ -399,9 +364,9 @@ def server(input, output, session):
     # ---------------------------------------------------------------
     # Settings and general reactive values
     hybrid_balance = reactive.Value(HYBRID_BALANCE)
-    search_results = reactive.value(None)
-    lexical_results = reactive.value(None)
-    selected_search_results = reactive.value(None)
+    search_results = reactive.Value(None)
+    lexical_results = reactive.Value(None)
+    selected_search_results = reactive.Value(None)
 
     # If an input is triggered, update the settings.
     # Reactive effects re-execute when the dependencies change.
@@ -463,14 +428,24 @@ def server(input, output, session):
             )
 
             lexical_results.set(cnt_bm25)
-            df_search_results = df.set_index("identifier").loc[ranked_index].reset_index()
-            df_search_results["chunks"] = result_chunks
+
+            # Guard against stale Weaviate identifiers not present in the DataFrame.
+            valid_ids = set(df["identifier"])
+            paired = [
+                (idx, chunk)
+                for idx, chunk in zip(ranked_index, result_chunks)
+                if idx in valid_ids
+            ]
+            if not paired:
+                return
+            valid_index, valid_chunks = zip(*paired)
+
+            df_search_results = df.set_index("identifier").loc[list(valid_index)].reset_index()
+            df_search_results["chunks"] = list(valid_chunks)
             search_results.set(df_search_results)
 
-            select_cols = ["title", "token_count"]
-            display_cols = ["Titel", "Tokens"]
-            display = df.set_index("identifier").loc[ranked_index].reset_index()[select_cols]
-            display.columns = display_cols
+            display = df_search_results[["title", "token_count"]].copy()
+            display.columns = ["Titel", "Tokens"]
             return render.DataGrid(
                 display,
                 selection_mode="rows",
@@ -486,7 +461,7 @@ def server(input, output, session):
         search_query = input.search_query()
         if lexical_results.get() == 0 and search_query.strip() != "":
             return ui.div(
-                f"Keine Entscheide über die lexikalische Suche mit dem exakten Stichwort gefunden.",
+                "Keine Entscheide über die lexikalische Suche mit dem exakten Stichwort gefunden.",
                 class_="alert alert-warning",
             )
         return ""
@@ -564,22 +539,4 @@ def server(input, output, session):
 # ---------------------------------------------------------------
 # App
 
-# Create a Starlette app for static file serving.
-# Use the StaticFiles middleware to serve static files from a local directory
-# as a reference to user to validate the results.
-# starlette_app = Starlette(
-#     routes=[
-#         Mount("/static", app=StaticFiles(directory=DOCS_DIR), name="static"),
-#     ]
-# )
-
-starlette_app = Starlette()
-
-# Create the Shiny app instance first.
-shiny_app = App(app_ui, server)
-
-# Mount the Shiny app onto the Starlette app.
-starlette_app.mount("/", app=shiny_app)
-
-# The final app object to be run is the Starlette app.
-app = starlette_app
+app = App(app_ui, server)
