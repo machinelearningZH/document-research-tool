@@ -1,15 +1,8 @@
+import spacy
 import tiktoken
 
-_nlp = None
 tokenizer = tiktoken.encoding_for_model("gpt-4o")
-
-
-def _get_nlp():
-    global _nlp
-    if _nlp is None:
-        import spacy
-        _nlp = spacy.load("de_core_news_lg")
-    return _nlp
+nlp = spacy.load("de_core_news_lg")
 
 
 def chunk_text(data, max_token_count=1000, overlap_tokens=200):
@@ -31,7 +24,7 @@ def chunk_text(data, max_token_count=1000, overlap_tokens=200):
     """
 
     # Sentencize text.
-    doc = _get_nlp()(data.text)
+    doc = nlp(data.text)
     sents = [sent.text for sent in doc.sents]
 
     # Count tokens in each sentence.
