@@ -27,4 +27,5 @@ dependencies = [
     "openai>=2.28.0",
 ]
 
-
+[tool.uv]
+exclude-newer = "7 days"
