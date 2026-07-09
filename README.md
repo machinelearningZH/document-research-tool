@@ -85,7 +85,7 @@ Many cantonal customers have large, mixed-source document collections and need s
 
 ## Project Team
 
-**Chantal Amrhein**, **Patrick Arnecke** – [Statistisches Amt Zürich: Team Data](https://www.zh.ch/de/direktion-der-justiz-und-des-innern/statistisches-amt/data.html)
+**Chantal Amrhein**, **Patrick Arnecke** – [Amt für Statistik und Daten: Team Data](https://www.zh.ch/de/direktion-der-justiz-und-des-innern/amt-fuer-statistik-und-daten.html)
 
 ## Feedback and Contributing
 

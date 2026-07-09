@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 license = "MIT"
 
 authors = [
-  { name = "Statistisches Amt Kanton Zürich, Team Data", email = "datashop@statistik.zh.ch" },
+  { name = "Amt für Statistik und Daten Kanton Zürich, Team Data", email = "datashop@statistik.zh.ch" },
 ]
 
 dependencies = [
