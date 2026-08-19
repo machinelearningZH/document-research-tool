@@ -1,0 +1,53 @@
+publiccodeYmlVersion: 0.5.0
+name: Intelligente Suche
+url: https://github.com/machinelearningZH/document-research-tool
+releaseDate: 2025-05-23
+platforms:
+  - windows
+  - mac
+  - linux
+  - web
+categories:
+  - document-management
+developmentStatus: beta
+softwareType: standalone/other
+organisation:
+  uri: https://ld.admin.ch/canton/1
+  name: Zurich
+description:
+  en:
+    localisedName: Research Tool for Document Collections
+    shortDescription: Perform intelligent research over document collections using
+      hybrid search and LLMs.
+    longDescription: "The Document Research Tool helps you quickly find answers in
+      large collections of documents instead of searching through them manually.
+      Simply ask a question, and the tool finds the most relevant documents and
+      lets you chat with them directly to get a well-founded answer. You stay in
+      control: you can see and choose exactly which documents are used to
+      generate your answer, so results stay transparent and trustworthy rather
+      than a black-box output. It's designed to support your work, not replace
+      it — helping domain experts save time on search and draft answers, while
+      final judgment always stays with you. The tool comes with ready-to-use
+      sample data from Zurich's cantonal parliament, and can be adapted to work
+      with your own document collection while keeping sensitive data on your own
+      infrastructure."
+    documentation: https://github.com/machinelearningZH/document-research-tool/blob/main/README.md
+    features:
+      - Hybrid search
+      - Retrieval-Augmented Generation
+      - LLM
+      - Semantic Search
+      - Document Chat
+      - Confidential Data Processing
+legal:
+  license: MIT
+maintenance:
+  type: internal
+  contacts:
+    - name: Team Data, Amt für Statistik und Daten
+      email: datashop@statistik.zh.ch
+localisation:
+  localisationReady: true
+  availableLanguages:
+    - en
+    - de
